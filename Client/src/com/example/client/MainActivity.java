@@ -9,6 +9,7 @@ import org.alljoyn.bus.SessionListener;
 import org.alljoyn.bus.SessionOpts;
 import org.alljoyn.bus.Status;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -57,6 +58,8 @@ public class MainActivity extends ActionBarActivity {
                 
         mBusHandler.sendEmptyMessage(BusHandler.CONNECT);
         //mHandler.sendEmptyMessage(MESSAGE_START_PROGRESS_DIALOG);
+        
+        startService(new Intent(getBaseContext(),MyService.class));
         
         Button btn = (Button)findViewById(R.id.send);
         btn.setOnClickListener(new View.OnClickListener(){
