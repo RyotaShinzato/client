@@ -178,6 +178,8 @@ public class MainActivity extends ActionBarActivity {
     	    	  short contactPort = CONTACT_PORT;
     	    	  SessionOpts sessionOpts = new SessionOpts();
     	    	  sessionOpts.transports = (short)msg.arg1;
+    	    	  //追加multipoint
+    	    	  sessionOpts.isMultipoint = true;
     	    	  Mutable.IntegerValue sessionId = new Mutable.IntegerValue();
     	    	  
     	    	  Status status = mBus.joinSession((String) msg.obj, contactPort, sessionId, sessionOpts, new SessionListener(){
