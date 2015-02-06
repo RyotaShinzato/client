@@ -37,13 +37,11 @@ public class MainActivity extends ActionBarActivity {
 	BusHandler mBusHandler;
 	private ArrayAdapter<String> mListViewArrayAdapter;
 	private ListView mListView;
-	
-	//private Handler mhandler = new Handler(){
-	//};
+	private static final String TAG = "Client";
 		
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	Log.d("hoge","起動");
+    	Log.d(TAG,"起動");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
@@ -56,13 +54,12 @@ public class MainActivity extends ActionBarActivity {
         mBusHandler = new BusHandler(busThread.getLooper());
                 
         mBusHandler.sendEmptyMessage(BusHandler.CONNECT);
-        //mHandler.sendEmptyMessage(MESSAGE_START_PROGRESS_DIALOG);
-        
+                
         Button btn = (Button)findViewById(R.id.send);
         btn.setOnClickListener(new View.OnClickListener(){
         	@Override
         	public void onClick(View v){
-        		Log.d("hoge","クリック");
+        		Log.d(TAG,"クリック");
         		
         		Message msg = mBusHandler.obtainMessage(BusHandler.PING,"UUID:XXXXXXXXX");
         		String ping = (String) msg.obj;
@@ -93,7 +90,7 @@ public class MainActivity extends ActionBarActivity {
     public void onDestroy(){
     	super.onDestroy();
     	mBusHandler.sendEmptyMessage(BusHandler.DISCONNECT);
-    	Log.d("hoge","ですとろーい");
+    	Log.d(TAG,"ですとろーい");
     }
     
     class BusHandler extends Handler {
@@ -137,7 +134,7 @@ public class MainActivity extends ActionBarActivity {
     	    		  //つながったら呼ばれる
                       @Override
                       public void foundAdvertisedName(String name, short transport, String namePrefix) {
-                      	Log.d("hoge","foundadvertisedname呼ばれた");
+                      	Log.d(TAG,"foundadvertisedname呼ばれた");
                       	if(!mIsConnected) {
                       	    Message msg = obtainMessage(JOIN_SESSION);
                       	    msg.arg1 = transport;
@@ -149,14 +146,14 @@ public class MainActivity extends ActionBarActivity {
     	    	  
     	    	  //ここでpermission怒られてるっぽい
     	    	  Status status = mBus.connect();
-    	    	  Log.d("hoge","connect: "+status);
+    	    	  Log.d(TAG,"connect: "+status);
     	    	  if(Status.OK != status){
     	    		  finish();
     	    		  return;
     	    	  }
     	    	  
     	    	  status = mBus.findAdvertisedName(SERVICE_NAME);
-    	    	  Log.d("hoge","findadvertisedname: "+status);
+    	    	  Log.d(TAG,"findadvertisedname: "+status);
     	    	  if(Status.OK != status){
     	    		  finish();
     	    		  return;
@@ -167,9 +164,9 @@ public class MainActivity extends ActionBarActivity {
     	      }
     	      
     	      case JOIN_SESSION:{
-    	    	  Log.d("hoge","join_session呼ばれた");
+    	    	  Log.d(TAG,"join_session呼ばれた");
     	    	  if(mIsStoppringDiscovery){
-    	    		  Log.d("hoge","stoppingdiscovery");
+    	    		  Log.d(TAG,"stoppingdiscovery");
     	    		  break;
     	    	  }
     	    	  short contactPort = CONTACT_PORT;
@@ -183,7 +180,7 @@ public class MainActivity extends ActionBarActivity {
     	    			 mIsConnected = false;
     	    		 }
     	    	  });
-    	    	  Log.d("hoge","joinnsesson: "+status);
+    	    	  Log.d(TAG,"joinnsesson: "+status);
     	    	  
     	    	  if(status == Status.OK){
     	    		  mProxyObj = mBus.getProxyBusObject(SERVICE_NAME, "/Service", sessionId.value, new Class<?>[]{ SimpleInterface.class});
@@ -199,7 +196,7 @@ public class MainActivity extends ActionBarActivity {
     	    	  mIsStoppringDiscovery = true;
     	    	  if(mIsConnected){
     	    		  //Status status =  mBus.leaveSession(mSessionId);
-    	    		  Log.d("hoge","leavesession");
+    	    		  Log.d(TAG,"leavesession");
     	    	  }
     	    	  mBus.disconnect();
     	    	  getLooper().quit();
@@ -209,10 +206,10 @@ public class MainActivity extends ActionBarActivity {
     	    	  try{
     	    		  if(mClientInterface != null){
     	    			  String reply = mClientInterface.Ping((String) msg.obj);
-    	    			  Log.d("hoge","reply= "+reply);
+    	    			  Log.d(TAG,"reply= "+reply);
     	    		  }
     	    	  } catch(BusException ex){
-    	    		  Log.d("hoge","exception "+ex);
+    	    		  Log.d(TAG,"exception "+ex);
     	    	  }
     	    	  break;
     	      }
