@@ -26,7 +26,11 @@ import android.widget.ListView;
 
 import com.example.client.R;
 
-
+import android.bluetooth.BluetoothAdapter.LeScanCallback;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -43,7 +47,8 @@ public class MainActivity extends ActionBarActivity {
 	private static final String TAG = "Client";
 	private static final int START_PROGRESS = 1;
 	private static final int STOP_PROGRESS= 2;
-	private static final int REPLY = 3;
+	private static final int MESSAGE_REPLY = 3;
+	private static final int MESSAGE_PING = 4;
 	
 	private Handler mHandler = new Handler(){
 		@Override
@@ -55,10 +60,13 @@ public class MainActivity extends ActionBarActivity {
 			case STOP_PROGRESS:
 				mProgressDialog.dismiss();
 				break;
-			case REPLY:
+			case MESSAGE_REPLY:
 				String rep = (String)msg.obj;
 				mListViewArrayAdapter.add("reply: "+rep);
 				break;
+			case MESSAGE_PING:
+				Message ms = mBusHandler.obtainMessage(BusHandler.PING, msg.obj);
+				mBusHandler.sendMessage(ms);
 			default:
 				break;
 			}
@@ -76,7 +84,7 @@ public class MainActivity extends ActionBarActivity {
         mListViewArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
         mListView = (ListView) findViewById(R.id.ListView);
         mListView.setAdapter(mListViewArrayAdapter);
-        
+                        
         HandlerThread busThread = new HandlerThread("BusHandler");
         busThread.start();
         mBusHandler = new BusHandler(busThread.getLooper());
@@ -90,10 +98,18 @@ public class MainActivity extends ActionBarActivity {
         	public void onClick(View v){
         		Log.d(TAG,"クリック");
         		
+        		//iBeaconスキャン
+        		final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
+                mBluetoothAdapter = mBluetoothManager.getAdapter();
+                mBluetoothAdapter.startLeScan(mLeScanCallback);
+        		
+                /*
         		Message msg = mBusHandler.obtainMessage(BusHandler.PING,"UUID:XXXXXXXXX");
         		String ping = (String) msg.obj;
         		mListViewArrayAdapter.add("ping: "+ping);
         		mBusHandler.sendMessage(msg);
+        		*/
         	}
         });
         
@@ -238,6 +254,7 @@ public class MainActivity extends ActionBarActivity {
     	    		  if(mClientInterface != null){
     	    			  String reply = mClientInterface.Ping((String) msg.obj);
     	    			  Log.d(TAG,"reply= "+reply);
+    	    			  mHandler.sendMessage(mHandler.obtainMessage(MESSAGE_REPLY,reply));
     	    		  }
     	    	  } catch(BusException ex){
     	    		  Log.d(TAG,"exception "+ex);
@@ -248,6 +265,53 @@ public class MainActivity extends ActionBarActivity {
     	         break;
     	      }
     	   }
-    	}
-    
+    }
+private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+		
+		@Override
+		public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+			Log.d(TAG,"onLeScan called");
+			// TODO Auto-generated method stub
+			if(scanRecord.length > 30)
+		    {
+		        //iBeacon の場合 6 byte 目から、 9 byte 目はこの値に固定されている。
+		        if((scanRecord[5] == (byte)0x4c) && (scanRecord[6] == (byte)0x00) &&
+		        (scanRecord[7] == (byte)0x02) && (scanRecord[8] == (byte)0x15))
+		        {
+		            String uuid = IntToHex2(scanRecord[9] & 0xff) 
+		                        + IntToHex2(scanRecord[10] & 0xff)
+		                        + IntToHex2(scanRecord[11] & 0xff)
+		                        + IntToHex2(scanRecord[12] & 0xff)
+		                        + "-"
+		                        + IntToHex2(scanRecord[13] & 0xff)
+		                        + IntToHex2(scanRecord[14] & 0xff)
+		                        + "-"
+		                        + IntToHex2(scanRecord[15] & 0xff)
+		                        + IntToHex2(scanRecord[16] & 0xff)
+		                        + "-"
+		                        + IntToHex2(scanRecord[17] & 0xff)
+		                        + IntToHex2(scanRecord[18] & 0xff)
+		                        + "-"
+		                        + IntToHex2(scanRecord[19] & 0xff)
+		                        + IntToHex2(scanRecord[20] & 0xff)
+		                        + IntToHex2(scanRecord[21] & 0xff)
+		                        + IntToHex2(scanRecord[22] & 0xff)
+		                        + IntToHex2(scanRecord[23] & 0xff)
+		                        + IntToHex2(scanRecord[24] & 0xff);
+		 
+		            String major = IntToHex2(scanRecord[25] & 0xff) + IntToHex2(scanRecord[26] & 0xff);
+		            String minor = IntToHex2(scanRecord[27] & 0xff) + IntToHex2(scanRecord[28] & 0xff);
+		            Log.d(TAG,"uuid: "+uuid);
+		            Message msg = mBusHandler.obtainMessage(mBusHandler.PING,uuid);
+		            mBusHandler.sendMessage(msg);
+		        }
+		    }
+		}
+
+		private String IntToHex2(int i) {
+			char hex_2[] = {Character.forDigit((i>>4) & 0x0f,16),Character.forDigit(i&0x0f, 16)};
+		    String hex_2_str = new String(hex_2);
+		    return hex_2_str.toUpperCase();
+		}
+    };
 }
