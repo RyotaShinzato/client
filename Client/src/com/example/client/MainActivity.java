@@ -9,6 +9,7 @@ import org.alljoyn.bus.SessionListener;
 import org.alljoyn.bus.SessionOpts;
 import org.alljoyn.bus.Status;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -37,7 +38,34 @@ public class MainActivity extends ActionBarActivity {
 	BusHandler mBusHandler;
 	private ArrayAdapter<String> mListViewArrayAdapter;
 	private ListView mListView;
+	private ProgressDialog mProgressDialog;
+	
 	private static final String TAG = "Client";
+	private static final int START_PROGRESS = 1;
+	private static final int STOP_PROGRESS= 2;
+	private static final int REPLY = 3;
+	
+	private Handler mHandler = new Handler(){
+		@Override
+		public void handleMessage(Message msg){
+			switch (msg.what){
+			case START_PROGRESS:
+				mProgressDialog = ProgressDialog.show(MainActivity.this,"","接続中",true,true);
+				break;
+			case STOP_PROGRESS:
+				mProgressDialog.dismiss();
+				break;
+			case REPLY:
+				String rep = (String)msg.obj;
+				mListViewArrayAdapter.add("reply: "+rep);
+				break;
+			default:
+				break;
+			}
+		}
+	};
+	
+	
 		
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +82,7 @@ public class MainActivity extends ActionBarActivity {
         mBusHandler = new BusHandler(busThread.getLooper());
                 
         mBusHandler.sendEmptyMessage(BusHandler.CONNECT);
+        mHandler.sendEmptyMessage(START_PROGRESS);
                 
         Button btn = (Button)findViewById(R.id.send);
         btn.setOnClickListener(new View.OnClickListener(){
@@ -172,6 +201,7 @@ public class MainActivity extends ActionBarActivity {
     	    	  short contactPort = CONTACT_PORT;
     	    	  SessionOpts sessionOpts = new SessionOpts();
     	    	  sessionOpts.transports = (short)msg.arg1;
+    	    	  sessionOpts.isMultipoint = true;
     	    	  Mutable.IntegerValue sessionId = new Mutable.IntegerValue();
     	    	  
     	    	  Status status = mBus.joinSession((String) msg.obj, contactPort, sessionId, sessionOpts, new SessionListener(){
@@ -188,6 +218,7 @@ public class MainActivity extends ActionBarActivity {
     	    		  
     	    		  mSessionId = sessionId.value;
     	    		  mIsConnected = true;
+    	    		  mHandler.sendEmptyMessage(STOP_PROGRESS);
     	    	  }
     	    	  break;
     	      }
